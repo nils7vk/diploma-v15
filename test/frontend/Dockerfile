@@ -16,5 +16,5 @@ RUN apt-get update && \
 COPY front.py wsgi.py /opt/app/
 WORKDIR /opt/app
 RUN pip3 install wheel uwsgi flask
-ENTRYPOINT [ "python3", "front.py" ]
+ENTRYPOINT [ "uwsgi", "--socket", "0.0.0.0:5000" , "--protocol=http", "-w", "wsgi:app" ]
 EXPOSE 5000
