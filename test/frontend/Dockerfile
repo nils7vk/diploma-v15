@@ -5,7 +5,7 @@ RUN apt-get update && \
     apt-get -y --no-install-recommends install \
 	python3 \
 	python3-venv \
-        python3-pip \
+	python3-pip \
 	python3-dev \
 	build-essential \
 	libssl-dev \
@@ -15,6 +15,7 @@ RUN apt-get update && \
 
 COPY front.py wsgi.py /opt/app/
 WORKDIR /opt/app
-RUN pip3 install wheel uwsgi flask
+RUN pip3 install wheel
+RUN pip3 install uwsgi flask
 ENTRYPOINT [ "uwsgi", "--socket", "0.0.0.0:5000" , "--protocol=http", "-w", "wsgi:app" ]
 EXPOSE 5000
