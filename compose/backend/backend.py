@@ -6,7 +6,6 @@ import json
 import sqlite3
 
 NHL_API = "https://statsapi.web.nhl.com/api/v1"
-NHL_TEAMS = NHL_API + "/teams"
 
 canadian_teams = [ "Calgary Flames",
                    "Edmonton Oilers",
@@ -19,9 +18,12 @@ canadian_teams = [ "Calgary Flames",
 def schedule_link(team_id, season, game_type="R"):
   return NHL_API + "/schedule?" + "teamId=" + str(team_id) + "&season=" + season + "&gameType=" + game_type
 
+def teams_link():
+  return NHL_API + "/teams"
+
 if __name__ == "__main__":
   try:
-    res = requests.get(NHL_TEAMS)
+    res = requests.get(teams_link())
   except requests.RequestException as e:
     print(str(e))
     quit()
