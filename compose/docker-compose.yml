@@ -3,7 +3,7 @@ services:
   flask:
     container_name: flask
     build: 
-      context: .
+      context: frontend
       dockerfile: Dockerfile.flask
     restart: on-failure
     networks:
@@ -12,7 +12,7 @@ services:
   nginx:
     container_name: nginx
     build:
-      context: .
+      context: frontend
       dockerfile: Dockerfile.nginx
     restart: on-failure
     networks:
