@@ -5,7 +5,9 @@ import requests
 import json
 import sqlite3
 
-NHL_API = "https://statsapi.web.nhl.com/api/v1"
+NHL_BASE = "https://statsapi.web.nhl.com" 
+NHL_API  = "https://statsapi.web.nhl.com/api/v1"
+NHL_SEASON = 20202021
 
 canadian_teams = [ "Calgary Flames",
                    "Edmonton Oilers",
@@ -16,10 +18,22 @@ canadian_teams = [ "Calgary Flames",
                    "Vancouver Canucks" ]
 
 def schedule_link(team_id, season, game_type="R"):
-  return NHL_API + "/schedule?" + "teamId=" + str(team_id) + "&season=" + season + "&gameType=" + game_type
+  return NHL_API + "/schedule?" + "teamId=" + str(team_id) + "&season=" + str(season) + "&gameType=" + game_type
 
 def teams_link():
   return NHL_API + "/teams"
+
+def team_roster(team_id, season):
+  return teams_link() + "/" + str(team_id) + "?expand=team.roster&season=" + str(season)
+
+def nhl_link(link):
+  return NHL_BASE + link
+
+def game_linescore(gamePk):
+  return NHL_API + "/game/" + str(gamePk) + "/linescore"
+
+def game_boxscore(gamePk):
+  return NHL_API + "/game/" + str(gamePk) + "/boxscore"
 
 if __name__ == "__main__":
   try:
@@ -38,18 +52,53 @@ if __name__ == "__main__":
       if team['name'].upper() in (name.upper() for name in canadian_teams):
         sql = "INSERT INTO teams VALUES('{}', '{}', '{}')".format(team['id'], team['name'], team['link'])
         db.execute(sql)
+  # Placeholder for home games
+  db.execute("CREATE TABLE games (gamePk INTEGER, team_id INTEGER, team_link TEXT)")
+  # Placeholder for swedes
+  db.execute("CREATE TABLE swedes (id INTEGER PRIMARY KEY, name TEXT, number INTEGER, position TEXT, team_id INTEGER)")
   # Get teams IDs
   db.execute("SELECT id FROM teams")
-  
-  records = db.fetchall()
-  for record in records:
-    team_id = record[0]
+  teams = db.fetchall()
+  for team in teams:
+    team_id = team[0]
     # Get team schedule for the specific season
-    res = requests.get(schedule_link(team_id, "20202021"))
+    res = requests.get(schedule_link(team_id, NHL_SEASON))
     if res.ok and 'application/json' in res.headers['content-type']:
       res_json = res.json()
       for date in res_json['dates']:
-        # We are looking for home games
+        # We are looking for home games of canadian teams
         for game in date['games']:
-          print(game['gamePk'])
-          print(game['teams']['home']['team'])
+          gamePk = game['gamePk']
+          team_name = game['teams']['home']['team']['name']
+          team_link = game['teams']['home']['team']['link']
+          sql = "INSERT INTO games VALUES ('{}','{}','{}')".format(gamePk, team_name, team_link)
+          db.execute(sql)
+ 
+    res = requests.get(team_roster(team_id, NHL_SEASON))
+    if res.ok and 'application/json' in res.headers['content-type']:
+      roster = res.json()
+      # Print team roster
+      for team in roster['teams']:
+        for player in team['roster']['roster']:
+          player_id = player['person']['id']
+          player_fullname = player['person']['fullName']
+          player_link = player['person']['link']
+          player_number = player['jerseyNumber']
+          player_position = player['position']['name']
+          _res = requests.get(nhl_link(player_link))
+          if _res.ok and 'application/json' in _res.headers['content-type']:
+              player_info = _res.json()
+              # Looking for swedes
+              if player_info['people'][0]['birthCountry'] == 'SWE':
+                sql = "INSERT INTO swedes VALUES ('{}', '{}', '{}', '{}', '{}')".format(player_id, player_fullname, player_number, player_position, team_id)
+                db.execute(sql)
+   
+  db.execute("SELECT DISTINCT gamePk FROM games")
+  games = db.fetchall()
+  #for gamePk in games:
+  #  print(game_boxscore(gamePk[0]))
+  res = requests.get("https://statsapi.web.nhl.com/api/v1/game/2020020141/boxscore")
+    
+  if res.ok and 'application/json' in res.headers['content-type']:
+    linescore_info = res.json()
+    print(linescore_info)
