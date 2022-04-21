@@ -78,21 +78,22 @@ if __name__ == "__main__":
     res = requests.get(game_boxscore(gamePk[0]))
     if res.ok and 'application/json' in res.headers['content-type']:
       boxscore_info = res.json()
-      for player_id in boxscore_info['teams']['home']['players']:
-        team_home_id = boxscore_info['teams']['home']['team']['id']
-        team_home_name = boxscore_info['teams']['home']['team']['name']
-        team_home_link = boxscore_info['teams']['home']['team']['link']
-        player = boxscore_info['teams']['home']['players'][player_id]
-        if player['person']['birthCountry'] == 'SWE':
-          swe_player_id = player['person']['id']
-          swe_player_full_name = player['person']['fullName']
-          if 'skaterStats' in player['stats']:
-            skey = 'skaterStats'
-            swe_player_time_on_ice = player['stats'][skey]['timeOnIce']
-            swe_player_assists = player['stats'][skey]['assists']
-            swe_player_goals = player['stats'][skey]['goals']
-          else: continue 
-          swe_player_team_id = team_home_id
-          swe_player_team_name = team_home_name
-          swe_player_team_link = team_home_link
-          print("{} {} {} {} {}".format(swe_player_id, swe_player_full_name, swe_player_time_on_ice, swe_player_assists, swe_player_goals))
+      for place in ('home', 'away'):
+        for player_id in boxscore_info['teams'][place]['players']:
+          team_home_id = boxscore_info['teams'][place]['team']['id']
+          team_home_name = boxscore_info['teams'][place]['team']['name']
+          team_home_link = boxscore_info['teams'][place]['team']['link']
+          player = boxscore_info['teams'][place]['players'][player_id]
+          if player['person']['birthCountry'] == 'SWE':
+            swe_player_id = player['person']['id']
+            swe_player_full_name = player['person']['fullName']
+            if 'skaterStats' in player['stats']:
+              skey = 'skaterStats'
+              swe_player_time_on_ice = player['stats'][skey]['timeOnIce']
+              swe_player_assists = player['stats'][skey]['assists']
+              swe_player_goals = player['stats'][skey]['goals']
+            else: continue 
+            swe_player_team_id = team_home_id
+            swe_player_team_name = team_home_name
+            swe_player_team_link = team_home_link
+            print("{} {} {} {} {}".format(swe_player_id, swe_player_full_name, swe_player_time_on_ice, swe_player_assists, swe_player_goals))
