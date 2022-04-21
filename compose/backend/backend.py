@@ -54,8 +54,6 @@ if __name__ == "__main__":
         db.execute(sql)
   # Placeholder for home games
   db.execute("CREATE TABLE games (gamePk INTEGER, team_id INTEGER, team_link TEXT)")
-  # Placeholder for swedes
-  db.execute("CREATE TABLE swedes (id INTEGER PRIMARY KEY, name TEXT, number INTEGER, position TEXT, team_id INTEGER)")
   # Get teams IDs
   db.execute("SELECT id FROM teams")
   teams = db.fetchall()
@@ -74,31 +72,27 @@ if __name__ == "__main__":
           sql = "INSERT INTO games VALUES ('{}','{}','{}')".format(gamePk, team_name, team_link)
           db.execute(sql)
  
-    res = requests.get(team_roster(team_id, NHL_SEASON))
-    if res.ok and 'application/json' in res.headers['content-type']:
-      roster = res.json()
-      # Print team roster
-      for team in roster['teams']:
-        for player in team['roster']['roster']:
-          player_id = player['person']['id']
-          player_fullname = player['person']['fullName']
-          player_link = player['person']['link']
-          player_number = player['jerseyNumber']
-          player_position = player['position']['name']
-          _res = requests.get(nhl_link(player_link))
-          if _res.ok and 'application/json' in _res.headers['content-type']:
-              player_info = _res.json()
-              # Looking for swedes
-              if player_info['people'][0]['birthCountry'] == 'SWE':
-                sql = "INSERT INTO swedes VALUES ('{}', '{}', '{}', '{}', '{}')".format(player_id, player_fullname, player_number, player_position, team_id)
-                db.execute(sql)
-   
   db.execute("SELECT DISTINCT gamePk FROM games")
   games = db.fetchall()
-  #for gamePk in games:
-  #  print(game_boxscore(gamePk[0]))
-  res = requests.get("https://statsapi.web.nhl.com/api/v1/game/2020020141/boxscore")
-    
-  if res.ok and 'application/json' in res.headers['content-type']:
-    linescore_info = res.json()
-    print(linescore_info)
+  for gamePk in games:
+    res = requests.get(game_boxscore(gamePk[0]))
+    if res.ok and 'application/json' in res.headers['content-type']:
+      boxscore_info = res.json()
+      for player_id in boxscore_info['teams']['home']['players']:
+        team_home_id = boxscore_info['teams']['home']['team']['id']
+        team_home_name = boxscore_info['teams']['home']['team']['name']
+        team_home_link = boxscore_info['teams']['home']['team']['link']
+        player = boxscore_info['teams']['home']['players'][player_id]
+        if player['person']['birthCountry'] == 'SWE':
+          swe_player_id = player['person']['id']
+          swe_player_full_name = player['person']['fullName']
+          if 'skaterStats' in player['stats']:
+            skey = 'skaterStats'
+            swe_player_time_on_ice = player['stats'][skey]['timeOnIce']
+            swe_player_assists = player['stats'][skey]['assists']
+            swe_player_goals = player['stats'][skey]['goals']
+          else: continue 
+          swe_player_team_id = team_home_id
+          swe_player_team_name = team_home_name
+          swe_player_team_link = team_home_link
+          print("{} {} {} {} {}".format(swe_player_id, swe_player_full_name, swe_player_time_on_ice, swe_player_assists, swe_player_goals))
