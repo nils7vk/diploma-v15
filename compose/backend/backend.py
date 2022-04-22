@@ -23,16 +23,16 @@ def schedule_link(team_id, season, game_type="R"):
 def teams_link():
   return NHL_API + "/teams"
 
-def team_roster(team_id, season):
+def team_roster_link(team_id, season):
   return teams_link() + "/" + str(team_id) + "?expand=team.roster&season=" + str(season)
 
 def nhl_link(link):
   return NHL_BASE + link
 
-def game_linescore(gamePk):
+def game_linescore_link(gamePk):
   return NHL_API + "/game/" + str(gamePk) + "/linescore"
 
-def game_boxscore(gamePk):
+def game_boxscore_link(gamePk):
   return NHL_API + "/game/" + str(gamePk) + "/boxscore"
 
 if __name__ == "__main__":
@@ -75,7 +75,7 @@ if __name__ == "__main__":
   db.execute("SELECT DISTINCT gamePk FROM games")
   games = db.fetchall()
   for gamePk in games:
-    res = requests.get(game_boxscore(gamePk[0]))
+    res = requests.get(game_boxscore_link(gamePk[0]))
     if res.ok and 'application/json' in res.headers['content-type']:
       boxscore_info = res.json()
       for place in ('home', 'away'):
@@ -96,4 +96,11 @@ if __name__ == "__main__":
             swe_player_team_id = team_home_id
             swe_player_team_name = team_home_name
             swe_player_team_link = team_home_link
-            print("{} {} {} {} {}".format(swe_player_id, swe_player_full_name, swe_player_time_on_ice, swe_player_assists, swe_player_goals))
+            print("{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}".format(swe_player_id, \
+                                                          swe_player_full_name, \
+                                                          swe_player_time_on_ice, \
+                                                          swe_player_assists, \
+                                                          swe_player_goals, \
+                                                          team_home_id, \
+                                                          team_home_name, \
+                                                          team_home_link))
