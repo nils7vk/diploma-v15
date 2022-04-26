@@ -11,6 +11,8 @@ import psycopg2
 
 NHL_BASE = "https://statsapi.web.nhl.com" 
 NHL_API  = "https://statsapi.web.nhl.com/api/v1"
+
+API_VERSION = 1
 NHL_SEASON = 20202021
 NHL_GAMETYPE = 'R'
 
@@ -187,8 +189,28 @@ def nhl_swedes_get(cursor, season, game_type, table_name='swedes'):
   try:
     cursor.execute(sql)
     records = cursor.fetchall()
+    res = {
+      "api_verion": API_VERSION,
+      "method": "get",
+      "result": {
+         "players": []
+       }
+    }
     for record in records:
-        print(record)
+      rec_json = {
+        "gamePk": record[1],
+        "season": record[2],
+        "player_id": record[3],
+        "full_name": record[4],
+        "time_on_ice": record[5],
+        "assists": record[6],
+        "goals": record[7],
+        "team_id": record[8],
+        "team_name": record[9],
+        "team_link": record[10]
+      }
+      res["result"]["players"].append(rec_json)
+    print(str(res))
   except psycopg2.OperationalError as error:
       print(str(error))
       sys.exit(1)
