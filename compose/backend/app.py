@@ -51,6 +51,7 @@ pg_ctx = {
 }
 
 pg_conn = None
+pg_cursor = None
 
 def nhl_db_open():
   try:
@@ -95,7 +96,6 @@ def nhl_swedes_init(cursor, table_name="swedes", update=False):
   except psycopg2.OperationalError as error:
     print(str(error))
     sys.exit(1)
-  return cursor
 
 def nhl_swedes_insert(cursor, values_list, table_name="swedes"):
     insert_values = "'{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}'".format(*values_list)
@@ -106,7 +106,6 @@ def nhl_swedes_insert(cursor, values_list, table_name="swedes"):
     except psycopg2.OperationalError as error:
       print(str(error))
       sys.exit(1)
-    return cursor
 
 def nhl_swedes_stats_update(cursor, season, game_type):
   try:
@@ -174,7 +173,7 @@ def nhl_swedes_stats_update(cursor, season, game_type):
                 swe_player_goals = player['stats'][skey]['goals']
               else: continue 
               # insert swedes stats into persisten database
-              nhl_swedes_insert(cursor_pg, [gamePk[0], game_type, season, swe_player_id, swe_player_full_name, swe_player_time_on_ice, \
+              nhl_swedes_insert(cursor, [gamePk[0], game_type, season, swe_player_id, swe_player_full_name, swe_player_time_on_ice, \
                                            swe_player_assists, \
                                            swe_player_goals, \
                                            team_home_id, \
@@ -210,15 +209,26 @@ def nhl_swedes_get(cursor, season, game_type, table_name='swedes'):
         "team_link": record[10]
       }
       res["result"]["players"].append(rec_json)
-    print(str(res))
   except psycopg2.OperationalError as error:
       print(str(error))
       sys.exit(1)
-  return cursor
+  return res
+
+app = Flask(__name__)
+
+@app.route("/")
+def index():
+  res = nhl_swedes_get(pg_cursor, NHL_SEASON, NHL_GAMETYPE)
+  if len(res["result"]["players"]) == 0:
+    # Update first time
+    nhl_swedes_stats_update(pg_cursor, NHL_SEASON, NHL_GAMETYPE)
+    res = nhl_swedes_get(pg_cursor, NHL_SEASON, NHL_GAMETYPE) 
+    if len(res["result"]["players"]) == 0:
+      return "<h1 style='color:blue'>There is no data for season specified parameters</h1>"
+    else: return res
+  return res
 
 if __name__ == "__main__":
-  cursor = nhl_db_open()
-  nhl_swedes_init(cursor)
-  #nhl_swedes_stats_update(cursor, NHL_SEASON, NHL_GAMETYPE)
-  nhl_swedes_get(cursor, NHL_SEASON, NHL_GAMETYPE)
-  nhl_db_close()
+  pg_cursor= nhl_db_open()
+  nhl_swedes_init(pg_cursor,update=True)
+  app.run(host='0.0.0.0')
