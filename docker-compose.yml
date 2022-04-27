@@ -57,7 +57,7 @@ services:
 
 volumes:    
   db:
-  cache:
+  static:
 
 networks:
   frontend:

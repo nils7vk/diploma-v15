@@ -1,1 +1,6 @@
-# v15
+## CMD
+```sh
+. ./backend/environ
+docker-compose build
+docker-compose up
+```
