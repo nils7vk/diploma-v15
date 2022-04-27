@@ -105,14 +105,24 @@ def nhl_swedes_insert(cursor, values_list, table_name="swedes"):
       cursor.execute(sql)
     except psycopg2.OperationalError as error:
       print(str(error))
-      sys.exit(1)
+      # pass this exception further
+      raise
 
 def nhl_swedes_stats_update(cursor, season, game_type):
+  # function return status value
+  ret = {
+      "api_version": API_VERSION,
+      "method": "update",
+      "result": {
+        "status": None
+       }
+  }
   try:
     res = requests.get(teams_link())
   except requests.RequestException as e:
     print(str(e))
-    sys.exit(1)
+    ret["result"]["status"] = "error"
+    return ret
 
   conn = sqlite3.connect("file::memory:?cache=shared", uri=True)
   db = conn.cursor()
@@ -146,9 +156,10 @@ def nhl_swedes_stats_update(cursor, season, game_type):
             db.execute(sql)
   except requests.RequestException as e:
     print(str(e))
-    sys.exit(1)
+    ret["result"]["status"] = "error"
+    return ret
   # init persistent table for swedes
-  cursor_pg = nhl_swedes_init(cursor)
+  nhl_swedes_init(cursor)
   
   db.execute("SELECT DISTINCT gamePk FROM games")
   games = db.fetchall()
@@ -179,17 +190,21 @@ def nhl_swedes_stats_update(cursor, season, game_type):
                                            team_home_id, \
                                            team_home_name, \
                                            team_home_link ])
-  except requests.RequestException as e:
+  except (requests.RequestException, psycopg2.OperationalError) as e:
     print(str(e))
-    sys.exit(1)
+    ret["result"]["status"] = "error"
+    return ret
+  # tell everything is ok
+  ret["result"]["status"] = "ok"
+  return ret
 
 def nhl_swedes_get(cursor, season, game_type, table_name='swedes'):
   sql = f'''SELECT * FROM {table_name} WHERE season={season} AND gameType='{game_type}';'''
   try:
     cursor.execute(sql)
     records = cursor.fetchall()
-    res = {
-      "api_verion": API_VERSION,
+    ret = {
+      "api_version": API_VERSION,
       "method": "get",
       "result": {
          "players": []
@@ -208,25 +223,25 @@ def nhl_swedes_get(cursor, season, game_type, table_name='swedes'):
         "team_name": record[9],
         "team_link": record[10]
       }
-      res["result"]["players"].append(rec_json)
+      ret["result"]["players"].append(rec_json)
   except psycopg2.OperationalError as error:
       print(str(error))
       sys.exit(1)
-  return res
+  return ret
 
 app = Flask(__name__)
 
 @app.route("/")
 def index():
-  res = nhl_swedes_get(pg_cursor, NHL_SEASON, NHL_GAMETYPE)
-  if len(res["result"]["players"]) == 0:
-    # Update first time
-    nhl_swedes_stats_update(pg_cursor, NHL_SEASON, NHL_GAMETYPE)
-    res = nhl_swedes_get(pg_cursor, NHL_SEASON, NHL_GAMETYPE) 
-    if len(res["result"]["players"]) == 0:
-      return "<h1 style='color:blue'>There is no data for season specified parameters</h1>"
-    else: return res
-  return res
+    return "<h1> Hello </h1>"
+
+@app.route("/nhl/v1/get")
+def get():
+  return nhl_swedes_get(pg_cursor, NHL_SEASON, NHL_GAMETYPE)
+
+@app.route("/nhl/v1/update")
+def update():
+  return nhl_swedes_stats_update(pg_cursor, NHL_SEASON, NHL_GAMETYPE)
 
 if __name__ == "__main__":
   pg_cursor= nhl_db_open()
