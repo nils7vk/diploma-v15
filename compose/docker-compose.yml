@@ -16,9 +16,9 @@ services:
       dockerfile: Dockerfile.nginx
     restart: on-failure
     networks:
-    - frontend
+      - frontend
     ports: 
-    - 8080:80
+      - 8080:80
 
   backend:
     container_name: backend
@@ -37,6 +37,8 @@ services:
     networks:
       - frontend
       - backend
+    ports:
+      - 5000:5000
 
   database:
     container_name: db

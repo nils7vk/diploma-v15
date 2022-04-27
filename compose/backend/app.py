@@ -241,7 +241,8 @@ def get():
   previous_year = current_year - 1
   season = "{}{}".format(previous_year, current_year)
   game_type = request.args.get("gametype", default = 'R', type = str)
-  return nhl_swedes_get(pg_cursor, season, game_type)
+  res = nhl_swedes_get(pg_cursor, season, game_type)
+  return json.dumps(res) 
 
 @app.route("/nhl/v1/update")
 def update():
@@ -250,7 +251,8 @@ def update():
   previous_year = current_year - 1
   season = "{}{}".format(previous_year, current_year)
   game_type = request.args.get("gametype", default = 'R', type = str)
-  return nhl_swedes_stats_update(pg_cursor, season, game_type)
+  res = nhl_swedes_stats_update(pg_cursor, season, game_type)
+  return json.dumps(res)
 
 if __name__ == "__main__":
   pg_cursor= nhl_db_open()
