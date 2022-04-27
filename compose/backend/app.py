@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from flask import Flask
+from flask import request
 from flask_sqlalchemy import SQLAlchemy
 import sys
 import requests
@@ -8,13 +9,11 @@ import json
 import sqlite3
 import os
 import psycopg2
+import datetime
 
 NHL_BASE = "https://statsapi.web.nhl.com" 
 NHL_API  = "https://statsapi.web.nhl.com/api/v1"
-
 API_VERSION = 1
-NHL_SEASON = 20202021
-NHL_GAMETYPE = 'R'
 
 canadian_teams = [ "Calgary Flames",
                    "Edmonton Oilers",
@@ -174,7 +173,7 @@ def nhl_swedes_stats_update(cursor, season, game_type):
             team_home_name = boxscore_info['teams'][place]['team']['name']
             team_home_link = boxscore_info['teams'][place]['team']['link']
             player = boxscore_info['teams'][place]['players'][player_id]
-            if player['person']['birthCountry'] == 'SWE':
+            if 'nationality' in player['person'] and player['person']['nationality'] == 'SWE':
               swe_player_id = player['person']['id']
               swe_player_full_name = player['person']['fullName']
               if 'skaterStats' in player['stats']:
@@ -237,11 +236,21 @@ def index():
 
 @app.route("/nhl/v1/get")
 def get():
-  return nhl_swedes_get(pg_cursor, NHL_SEASON, NHL_GAMETYPE)
+  now = datetime.datetime.now()
+  current_year = request.args.get("season", default = now.year, type = int)
+  previous_year = current_year - 1
+  season = f"{previous_year}{current_year}"
+  game_type = request.args.get("gametype", default = 'R', type = str)
+  return nhl_swedes_get(pg_cursor, season, game_type)
 
 @app.route("/nhl/v1/update")
 def update():
-  return nhl_swedes_stats_update(pg_cursor, NHL_SEASON, NHL_GAMETYPE)
+  now = datetime.datetime.now()
+  current_year = request.args.get("season", default = now.year, type = int)
+  previous_year = current_year - 1
+  season = f"{previous_year}{current_year}"
+  game_type = request.args.get("gametype", default = 'R', type = str)
+  return nhl_swedes_stats_update(pg_cursor, season, game_type)
 
 if __name__ == "__main__":
   pg_cursor= nhl_db_open()
