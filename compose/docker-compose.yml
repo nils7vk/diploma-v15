@@ -25,6 +25,7 @@ services:
     build:
       context: backend
       dockerfile: Dockerfile
+    restart: on-failure
     depends_on:
       - database
     environment:
@@ -40,6 +41,7 @@ services:
   database:
     container_name: db
     image: postgres:14-alpine
+    restart: on-failure
     networks:
       - backend
     volumes:
@@ -57,14 +59,4 @@ volumes:
 
 networks:
   frontend:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 10.17.0.0/24
-          gateway: 10.17.0.1
   backend:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 10.117.0.0/24
-          gateway: 10.117.0.1
