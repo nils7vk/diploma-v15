@@ -1,6 +1,7 @@
 FROM debian:9.13-slim
 LABEL maintainer "Alexey Petrunev alexey_petrunev@epam.com"
-
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 RUN apt-get update && \
     apt-get -y --no-install-recommends install \
 	python3 \
@@ -10,13 +11,11 @@ RUN apt-get update && \
 	build-essential \
 	libssl-dev \
 	libffi-dev \
+        libpq-dev \
 	python3-setuptools && \
 	rm -rf /var/lib/apt/lists/*
 
-COPY front.py wsgi.py requirements.txt /opt/app/
+COPY app.py requirements.txt /opt/app/
 WORKDIR /opt/app
-RUN pip3 install -U wheel && \
-    pip3 install -U uwsgi flask && \
-    pip3 install -r requirements.txt
-ENTRYPOINT [ "uwsgi", "--socket", "0.0.0.0:5000" , "--protocol=http", "-w", "wsgi:app" ]
-EXPOSE 5000
+RUN pip3 install -r requirements.txt
+ENTRYPOINT [ "./app.py" ]

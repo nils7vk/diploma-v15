@@ -198,7 +198,7 @@ def nhl_swedes_stats_update(cursor, season, game_type):
   return ret
 
 def nhl_swedes_get(cursor, season, game_type, table_name='swedes'):
-  sql = f'''SELECT * FROM {table_name} WHERE season={season} AND gameType='{game_type}';'''
+  sql = "SELECT * FROM {} WHERE season={} AND gameType='{}';".format(table_name, season, game_type)
   try:
     cursor.execute(sql)
     records = cursor.fetchall()
@@ -239,7 +239,7 @@ def get():
   now = datetime.datetime.now()
   current_year = request.args.get("season", default = now.year, type = int)
   previous_year = current_year - 1
-  season = f"{previous_year}{current_year}"
+  season = "{}{}".format(previous_year, current_year)
   game_type = request.args.get("gametype", default = 'R', type = str)
   return nhl_swedes_get(pg_cursor, season, game_type)
 
@@ -248,7 +248,7 @@ def update():
   now = datetime.datetime.now()
   current_year = request.args.get("season", default = now.year, type = int)
   previous_year = current_year - 1
-  season = f"{previous_year}{current_year}"
+  season = "{}{}".format(previous_year, current_year)
   game_type = request.args.get("gametype", default = 'R', type = str)
   return nhl_swedes_stats_update(pg_cursor, season, game_type)
 
